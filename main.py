@@ -123,36 +123,46 @@ def Centralization_and_Standardization(array_list, mode = 'cols'):
         return(array_merge, CS)
 
 ################################################################################
+def Consolidation_and_Save(evaluation_Train, evaluation_Target, validation_Train, validation_Target, calendar, sell_prices):
+    #evaluation
+    N1, d1 = evaluation_Train.shape
+    N2, d2 = evaluation_Target.shape
+    N3, d3 = calendar.shape
+    #
+    with open('Evaluation.csv', 'w') as out:
+        for i in range(1):
+            for j in range(2):
+                print(','.join([str(evaluation_Train[i, d]) for d in range(d1)]), end = ',', file = out)
+                print(','.join([str(calendar[j, d]) for d in range(d3) if d != 0]), end = ',', file = out)
+                print(sell_prices[int(evaluation_Train[i, 3]), int(evaluation_Train[i, 0]), int(calendar[j, 0])], end = ',', file = out)
+                print(evaluation_Target[i, j], end = '\n', file = out)
+
+################################################################################
 def main():
     #
     calendar_list = Read_CSV('calendar.csv')
     sales_train_evaluation_list = Read_CSV('sales_train_evaluation.csv')
     sales_train_validation_list = Read_CSV('sales_train_validation.csv')
     sell_prices_list = Read_CSV('sell_prices.csv')
-    #
+    #商品信息
     sales_train_evaluation_Types, sales_train_evaluation_array, train_evaluation_Target_array = Extract_Item_Features(sales_train_evaluation_list)
     sales_train_validation_Types, sales_train_validation_array, train_validation_Target_array = Extract_Item_Features(sales_train_validation_list)
-    #
+    #日历信息，价格信息
     calendar_f_indexs = [1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 13]
     calendar_Types, calendar_array = Extract_Date_Features(calendar_list, calendar_f_indexs)
-    #if sales_train_evaluation_Types[3] == sales_train_validation_Types[3] and sales_train_evaluation_Types[0] == sales_train_validation_Types[0]:
     if sales_train_evaluation_Types == sales_train_validation_Types:
         print('Types in evaluation and validation are the same!')
     else:
         print('Error')
     sell_prices_array = Extract_Store_Item_Date_Features(sell_prices_list, sales_train_evaluation_Types[3], sales_train_evaluation_Types[0], calendar_Types[0])
-    #
+    #中心化与规范化
     #np.set_printoptions(threshold = np.inf)
-    #sales_train_evaluation_array, sales_train_evaluation_CS = Centralization_and_Standardization(sales_train_evaluation_array)
     sales_train_evaluation_array, sales_train_validation_array, sales_train_CS = Centralization_and_Standardization([sales_train_evaluation_array, sales_train_validation_array])
     calendar_array, calendar_CS = Centralization_and_Standardization([calendar_array])
     sell_prices_array, sell_prices_CS = Centralization_and_Standardization([sell_prices_array], 'whole')
-    #train_evaluation_Target_array, train_evaluation_Target_CS = Centralization_and_Standardization(train_evaluation_Target_array, 'whole')
     train_evaluation_Target_array, train_validation_Target_array, train_Target_CS = Centralization_and_Standardization([train_evaluation_Target_array, train_validation_Target_array], 'whole')
-    print(sales_train_CS)
-    print(calendar_CS)
-    print(sell_prices_CS)
-    print(train_Target_CS)
+    #整合数据保存
+    Consolidation_and_Save(sales_train_evaluation_array, train_evaluation_Target_array, sales_train_validation_array, train_validation_Target_array, calendar_array, sell_prices_array)
 
 ################################################################################
 if __name__ == '__main__':
