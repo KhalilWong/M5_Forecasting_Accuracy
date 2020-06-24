@@ -130,8 +130,8 @@ def Consolidation_and_Save(evaluation_Train, evaluation_Target, validation_Train
     N3, d3 = calendar.shape
     #
     with open('Evaluation.csv', 'w') as out:
-        for i in range(1):
-            for j in range(2):
+        for i in range(N1):
+            for j in range(d2):
                 print(','.join([str(evaluation_Train[i, d]) for d in range(d1)]), end = ',', file = out)
                 print(','.join([str(calendar[j, d]) for d in range(d3) if d != 0]), end = ',', file = out)
                 print(sell_prices[int(evaluation_Train[i, 3]), int(evaluation_Train[i, 0]), int(calendar[j, 0])], end = ',', file = out)
