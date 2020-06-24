@@ -128,14 +128,23 @@ def Consolidation_and_Save(evaluation_Train, evaluation_Target, validation_Train
     N1, d1 = evaluation_Train.shape
     N2, d2 = evaluation_Target.shape
     N3, d3 = calendar.shape
+    N_row = N1 * d2
+    N_Item_Batch = 300
     #
-    with open('Evaluation.csv', 'w') as out:
-        for i in range(1):
-            for j in range(2):
-                print(','.join([str(evaluation_Train[i, d]) for d in range(d1)]), end = ',', file = out)
-                print(','.join([str(calendar[j, d]) for d in range(d3) if d != 0]), end = ',', file = out)
-                print(sell_prices[int(evaluation_Train[i, 3]), int(evaluation_Train[i, 0]), int(calendar[j, 0])], end = ',', file = out)
-                print(evaluation_Target[i, j], end = '\n', file = out)
+    Count = 0
+    N_Batch = 0
+    while Count < N1:
+        with open('Evaluation_Part%d.csv' % (N_Batch), 'w') as out:
+            for i in range(Count, N1):
+                for j in range(d2):
+                    print(','.join([str(evaluation_Train[i, d]) for d in range(d1)]), end = ',', file = out)
+                    print(','.join([str(calendar[j, d]) for d in range(d3) if d != 0]), end = ',', file = out)
+                    print(sell_prices[int(evaluation_Train[i, 3]), int(evaluation_Train[i, 0]), int(calendar[j, 0])], end = ',', file = out)
+                    print(evaluation_Target[i, j], end = '\n', file = out)
+                if i % N_Item_Batch == -1:
+                    break
+        N_Batch += 1
+        Count += N_Item_Batch
 
 ################################################################################
 def main():
