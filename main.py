@@ -123,25 +123,41 @@ def Centralization_and_Standardization(array_list, mode = 'cols'):
         return(array_merge, CS)
 
 ################################################################################
-def Consolidation_and_Save(evaluation_Train, evaluation_Target, validation_Train, validation_Target, calendar, sell_prices):
+def Consolidation_and_Save(evaluation_Train, evaluation_Target, validation_Train, validation_Target, calendar, sell_prices, train_CS, calendar_CS):
     #evaluation
     N1, d1 = evaluation_Train.shape
     N2, d2 = evaluation_Target.shape
     N3, d3 = calendar.shape
-    N_row = N1 * d2
-    N_Item_Batch = 300
+    N_Item_Batch = 400
     #
     Count = 0
     N_Batch = 0
     while Count < N1:
-        with open('Evaluation_Part%d.csv' % (N_Batch), 'w') as out:
+        with open('./Train_Evaluation/Evaluation_Part%d.csv' % (N_Batch), 'w') as out:
             for i in range(Count, N1):
                 for j in range(d2):
-                    print(','.join([str(evaluation_Train[i, d]) for d in range(d1)]), end = ',', file = out)
-                    print(','.join([str(calendar[j, d]) for d in range(d3) if d != 0]), end = ',', file = out)
-                    print(sell_prices[int(evaluation_Train[i, 3]), int(evaluation_Train[i, 0]), int(calendar[j, 0])], end = ',', file = out)
-                    print(evaluation_Target[i, j], end = '\n', file = out)
-                if i % N_Item_Batch == -1:
+                    print(','.join([str(round(evaluation_Train[i, d], 4)) for d in range(d1)]), end = ',', file = out)
+                    print(','.join([str(round(calendar[j, d], 4)) for d in range(d3) if d != 0]), end = ',', file = out)
+                    print(round(sell_prices[int(round(evaluation_Train[i, 3] * train_CS[3, 1] + train_CS[3, 0] - 1)), int(round(evaluation_Train[i, 0] * train_CS[0, 1] + train_CS[0, 0] - 1)), int(round(calendar[j, 0] * calendar_CS[0, 1] + calendar_CS[0, 0] - 1))], 4), end = ',', file = out)
+                    print(round(evaluation_Target[i, j], 4), end = '\n', file = out)
+                if i % N_Item_Batch == N_Item_Batch - 1:
+                    break
+        N_Batch += 1
+        Count += N_Item_Batch
+    #
+    N1, d1 = validation_Train.shape
+    N2, d2 = validation_Target.shape
+    Count = 0
+    N_Batch = 0
+    while Count < N1:
+        with open('./Train_Validation/Validation_Part%d.csv' % (N_Batch), 'w') as out:
+            for i in range(Count, N1):
+                for j in range(d2):
+                    print(','.join([str(round(validation_Train[i, d], 4)) for d in range(d1)]), end = ',', file = out)
+                    print(','.join([str(round(calendar[j, d], 4)) for d in range(d3) if d != 0]), end = ',', file = out)
+                    print(round(sell_prices[int(round(validation_Train[i, 3] * train_CS[3, 1] + train_CS[3, 0] - 1)), int(round(validation_Train[i, 0] * train_CS[0, 1] + train_CS[0, 0] - 1)), int(round(calendar[j, 0] * calendar_CS[0, 1] + calendar_CS[0, 0] - 1))], 4), end = ',', file = out)
+                    print(round(validation_Target[i, j], 4), end = '\n', file = out)
+                if i % N_Item_Batch == N_Item_Batch - 1:
                     break
         N_Batch += 1
         Count += N_Item_Batch
@@ -165,13 +181,13 @@ def main():
         print('Error')
     sell_prices_array = Extract_Store_Item_Date_Features(sell_prices_list, sales_train_evaluation_Types[3], sales_train_evaluation_Types[0], calendar_Types[0])
     #中心化与规范化
-    #np.set_printoptions(threshold = np.inf)
     sales_train_evaluation_array, sales_train_validation_array, sales_train_CS = Centralization_and_Standardization([sales_train_evaluation_array, sales_train_validation_array])
     calendar_array, calendar_CS = Centralization_and_Standardization([calendar_array])
+    #np.set_printoptions(threshold = np.inf)
     sell_prices_array, sell_prices_CS = Centralization_and_Standardization([sell_prices_array], 'whole')
     train_evaluation_Target_array, train_validation_Target_array, train_Target_CS = Centralization_and_Standardization([train_evaluation_Target_array, train_validation_Target_array], 'whole')
     #整合数据保存
-    Consolidation_and_Save(sales_train_evaluation_array, train_evaluation_Target_array, sales_train_validation_array, train_validation_Target_array, calendar_array, sell_prices_array)
+    Consolidation_and_Save(sales_train_evaluation_array, train_evaluation_Target_array, sales_train_validation_array, train_validation_Target_array, calendar_array, sell_prices_array, sales_train_CS, calendar_CS)
 
 ################################################################################
 if __name__ == '__main__':
