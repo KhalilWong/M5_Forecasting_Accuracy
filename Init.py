@@ -1,5 +1,4 @@
 import csv
-import torch
 import numpy as np
 import numba as nb
 
