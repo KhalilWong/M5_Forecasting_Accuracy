@@ -46,15 +46,10 @@ class RMSSE(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, y_a, y_f):
-        x = F.max_pool1d(F.relu(self.conv1(x)), 2)
-        x = F.max_pool1d(F.relu(self.conv2(x)), 2)
-        x = F.max_pool1d(F.relu(self.conv3(x)), 2)
-        x = F.max_pool1d(F.relu(self.conv4(x)), 2)
-        x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+    def forward(self, y_a, y_f, n, h):
+        loss = torch.sum(y_a - y_f) / h
+        loss /= torch.sum(y_a[2:] - y_a[:-1])
+        return(loss)
 
 ################################################################################
 def main():
@@ -64,7 +59,7 @@ def main():
     N_Train_day = [1913, 1941]
     #
     net = Net()
-    criterion = nn.CrossEntropyLoss()
+    criterion = RMSSE()
     optimizer = optim.SGD(net.parameters(), lr = 0.001, momentum = 0.9)
     running_loss = 0.0
     for i in range(77):
@@ -79,7 +74,7 @@ def main():
             optimizer.zero_grad()
             # forward + backward + optimize
             outputs = net(inputs)
-            loss = criterion(outputs, labels)
+            loss = criterion(outputs, labels, n, h)
             loss.backward()
             optimizer.step()
             #
