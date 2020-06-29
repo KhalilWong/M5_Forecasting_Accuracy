@@ -17,8 +17,8 @@ class Net(nn.Module):
         self.conv2 = nn.Conv2d(4, 16, 3, padding = 1)
         self.conv3 = nn.Conv2d(16, 64, 3, padding = 1)
         #
-        self.fc1 = nn.Linear(30976, 4096)           #248,448; 16,384##15520
-        self.fc2 = nn.Linear(4096, 1024)                  #16,384; 1,024
+        self.fc1 = nn.Linear(30976, 4096)                                       #248,448; 16,384##15520
+        self.fc2 = nn.Linear(4096, 1024)                                        #16,384; 1,024
         self.fc3 = nn.Linear(1024, Type)
 
     def forward(self, x, device):
@@ -27,13 +27,13 @@ class Net(nn.Module):
         x = F.max_pool2d(F.elu(self.conv2(x)), 2)
         x = F.max_pool2d(F.elu(self.conv3(x)), 2)
         x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.elu(self.fc1(x))
+        x = F.elu(self.fc2(x))
         x = self.fc3(x)
         return x
 
     def num_flat_features(self, x):
-        size = x.size()[1:]  # 除去批处理维度的其他所有维度
+        size = x.size()[1:]                                                     #除去批处理维度的其他所有维度
         num_features = 1
         for s in size:
             num_features *= s
@@ -66,6 +66,7 @@ def StrListToTensor(List):
     tensor0 = torch.from_numpy(array0).float()
     #tensor0 = torch.Tensor(tensor0, dtype = torch.double)
     return(tensor0)
+
 ################################################################################
 def main():
     #
@@ -82,7 +83,7 @@ def main():
     #optimizer = optim.Adam(net.parameters(), lr = 0.001)
     running_loss = 0.0
     Error = []
-    Pre = np.zeros((3049, 28))
+    Pre = np.zeros((30490, 28))
     Loops = 50
     start_time = time.time()
     for epoch in range(Loops):
