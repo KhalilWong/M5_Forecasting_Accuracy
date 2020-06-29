@@ -17,7 +17,7 @@ class Net(nn.Module):
         self.conv2 = nn.Conv2d(4, 16, 3, padding = 1)
         self.conv3 = nn.Conv2d(16, 64, 3, padding = 1)
         #
-        self.fc1 = nn.Linear(30976, 4096)                                       #248,448; 16,384##15520
+        self.fc1 = nn.Linear(30592, 4096)                                       #248,448; 16,384##15520
         self.fc2 = nn.Linear(4096, 1024)                                        #16,384; 1,024
         self.fc3 = nn.Linear(1024, Type)
 
@@ -94,7 +94,7 @@ def main():
             N, d = data.shape
             #
             for j in range(int(N / N_day[0] / N_Batch)):
-                inputs = data[j * N_day[0] * N_Batch: (j + 1) * N_day[0] * N_Batch, :d - 1]
+                inputs = data[j * N_day[0] * N_Batch: (j + 1) * N_day[0] * N_Batch - 28, :d - 1]
                 inputs = inputs.view(N_Batch, 1, -1, 16)
                 #labels_Batch = []
                 #for k in range(N_Batch):
@@ -140,6 +140,100 @@ def main():
     mpl.plot(Error)
     mpl.savefig('Error.png', dpi = 600)
     mpl.close()
+    #Add
+    net = Net()
+    net.load_state_dict(torch.load(PATH))
+    net.to(device)
+    criterion = RMSSE()
+    optimizer = optim.SGD(net.parameters(), lr = 0.001, momentum = 0.9)
+    running_loss = 0.0
+    Error = []
+    Pre = np.zeros((30490, 28))
+    Loops = 50
+    start_time = time.time()
+    for epoch in range(Loops):
+        Count = 0
+        for i in range(77):
+            data_list = Init.Read_CSV('./Train_Evaluation/'+ Names[0] + '_Part'+ str(i) +'.csv')
+            data = StrListToTensor(data_list)
+            N, d = data.shape
+            #
+            for j in range(int(N / N_day[0] / N_Batch)):
+                inputs = data[j * N_day[0] * N_Batch: (j + 1) * N_day[0] * N_Batch - 28, :d - 1]
+                inputs = inputs.view(N_Batch, 1, -1, 16)
+                #labels_Batch = []
+                #for k in range(N_Batch):
+                #    labels_Batch.append(data[j * N_day[0] * N_Batch + k * N_day[0] + N_Train_day[0]: (j + 1) * N_day[0] * N_Batch - (N_Batch - 1 - k) * N_day[0], -1])
+                #labels = torch.stack(labels_Batch, dim = 0)
+                #print(labels.shape)
+                labels = data[j * N_day[0] * N_Batch: (j + 1) * N_day[0] * N_Batch, -1]
+                labels = labels.view(1, -1)
+                inputs_d = inputs.to(device)
+                labels_d = labels.to(device)
+                # zero the parameter gradients
+                optimizer.zero_grad()
+                # forward + backward + optimize
+                outputs = net(inputs_d, device = device)
+                outputs = outputs.view(1, -1)
+                loss = criterion(device, labels_d, outputs, N_Train_day[0], 28, N_Batch)
+                loss.backward()
+                optimizer.step()
+                #
+                running_loss += loss.item()
+                if j % int(100 / N_Batch) == int(100 / N_Batch) - 1:
+                    print('[Epoch:%d, File:%d, Batch:%d] loss: %f' % (epoch, i, j + 1, running_loss / int(100 / N_Batch)))
+                    Error.append(running_loss / int(100 / N_Batch))
+                    running_loss = 0.0
+                if epoch == Loops - 1:
+                    outputs = outputs.to("cpu", torch.double)
+                    outputs = outputs.view(1, -1)
+                    outputs_np = outputs.detach().numpy()
+                    Pre[Count, :] = outputs_np
+                Count += 1
+    print('Finished Training')
+    end_time = time.time()
+    print('Total Time: %dd %dh %dm %ds.' % (int(int(end_time - start_time) / 86400), int(int(end_time - start_time) % 86400 / 3600), int(int(end_time - start_time) % 3600 / 60), int(end_time - start_time) % 60))
+    PATH = './final_net.pth'
+    torch.save(net.state_dict(), PATH)
+    with open('Valid-28.csv', 'w') as out:
+        for i in range(len(Pre[:, 0])):
+            for j in range(len(Pre[0, :])):
+                if j == len(Pre[0, :]) - 1:
+                    print(int(round(Pre[i, j] * 3.87156307 + 1.12862156)), end = '\n', file = out)
+                else:
+                    print(int(round(Pre[i, j] * 3.87156307 + 1.12862156)), end = ',', file = out)
+    mpl.plot(Error)
+    mpl.savefig('Error.png', dpi = 600)
+    mpl.close()
+    #test
+    net = Net()
+    net.load_state_dict(torch.load(PATH))
+    net.to(device)
+    Pre_test = np.zeros((30490, 28))
+    with torch.no_grad():
+        Count = 0
+        for i in range(77):
+            data_list = Init.Read_CSV('./Train_Evaluation/'+ Names[0] + '_Part'+ str(i) +'.csv')
+            data = StrListToTensor(data_list)
+            N, d = data.shape
+            #
+            for j in range(int(N / N_day[0] / N_Batch)):
+                inputs = data[j * N_day[0] * N_Batch + 28: (j + 1) * N_day[0] * N_Batch, :d - 1]
+                inputs = inputs.view(N_Batch, 1, -1, 16)
+                inputs_d = inputs.to(device)
+                outputs_test = net(inputs_d, device = device)
+                outputs_test = outputs_test.to('cpu', torch.double)
+                outputs = outputs.view(1, -1)
+                outputs_np = outputs.detach().numpy()
+                Pre_test[Count, :] = outputs_np
+                Count += 1
+    with open('Evalu-28.csv', 'w') as out:
+        for i in range(len(Pre_test[:, 0])):
+            for j in range(len(Pre_test[0, :])):
+                if j == len(Pre_test[0, :]) - 1:
+                    print(int(round(Pre_test[i, j] * 3.87156307 + 1.12862156)), end = '\n', file = out)
+                else:
+                    print(int(round(Pre_test[i, j] * 3.87156307 + 1.12862156)), end = ',', file = out)
 
 ################################################################################
 if __name__ == '__main__':
