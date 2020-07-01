@@ -223,8 +223,8 @@ def main():
                 inputs_d = inputs.to(device)
                 outputs_test = net(inputs_d, device = device)
                 outputs_test = outputs_test.to('cpu', torch.double)
-                outputs = outputs.view(1, -1)
-                outputs_np = outputs.detach().numpy()
+                outputs_test = outputs_test.view(1, -1)
+                outputs_np = outputs_test.detach().numpy()
                 Pre_test[Count, :] = outputs_np
                 Count += 1
     with open('Evalu-28.csv', 'w') as out:
